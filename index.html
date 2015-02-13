@@ -150,7 +150,12 @@
 					function building_str( chunk, build )
 					{
 						if( chunk == '.')       return ""
-						if( chunk.length == 1 ) return build;
+						if( chunk.length == 1 )
+						{
+							if( chunk == '1' )
+								return build;
+							return chunk+build;
+						}
 						return chunk[0]+build;
 					}
 					var desc = 
@@ -180,11 +185,11 @@
 						row.append( "<td>"+ rate );
 						row.append( "<td style='text-align:left'>"+desc );
 
-						row.append( "<td style='border-left:1px solid gray;'>"+ret[0].mean().toFixed(2) );
+						row.append( "<td style='border-left:1px solid gray;text-align:right'>"+ret[0].mean().toFixed(2) );
 						row.append( "<td>±" );
 						row.append( "<td>"+ret[0].meanstd().toFixed(2) );
 
-						row.append( "<td style='border-left:1px solid gray;'>"+ret[1].mean().toFixed(2) );
+						row.append( "<td style='border-left:1px solid gray;text-align:right'>"+ret[1].mean().toFixed(2) );
 						row.append( "<td>±" );
 						row.append( "<td>"+ret[1].meanstd().toFixed(2) );
 
@@ -285,8 +290,10 @@
 
 	<body>
 		<div id="header" >
-		Choose a Faction, player(per faction) rating, and first round buildings (that they passed with). 
-		Checkboxes mean "strictly" equal to that value, otherwise its equal or greater.<br><br>
+			Choose Players, Rating (per faction), and first round buildings (that they passed with).
+			Then, Press "Stats!" to calculate for the selected faction or "All faction Stats!" for every faction<br>
+			Checkboxes mean "strictly" equal to that value, otherwise its equal or greater.
+			"VP" is the raw score at the end of the game. "Margin" is [ score - (that game's avg score)]
 		<table><tr><th>Faction</th>
 				<th>Player Count</th>
 				<th>Rating Quartile</th>
