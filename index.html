@@ -366,10 +366,10 @@
 						tr.remove();
 					}
 				});
-				$(".stat-cont").each( function( i, table ) {
-					if( table.children.length == 1 )
+				$(".stat-cont tbody").each( function( ) {
+					if( this.children.length == 1 )
 					{
-						$(table).parent().remove();
+						$(this).parent().parent().remove();
 					}
 				});
 				$.each( exist_keys, function( i, key ) {
