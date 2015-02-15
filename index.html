@@ -163,7 +163,7 @@
                         }
                         return chunk[0]+build;
                     }
-                    var desc = 
+                    var BUILD = 
                         building_str( chunks[3], "D" ) +
                         building_str( chunks[4], "TP" ) +
                         building_str( chunks[5], "TE" ) +
@@ -185,8 +185,11 @@
 						strFAV.push( ALLFAV[ FAV[i] ] );
 					FAV = strFAV.join("<br>");
 
-					if( desc == "" ) desc = BON;
-					if( desc == "" ) desc = FAV;
+					var desc = [];
+					if( BUILD ) desc.push( BUILD );
+					if( BON ) desc.push( BON );
+					if( FAV ) desc.push( FAV );
+					desc = desc.join("<br>")
 
 					var tooltip = BON + " " + FAV;
 
@@ -384,10 +387,12 @@
 
     <body>
         <div id="header" >
-            Choose Players, Rating (per faction), and first round buildings (that they passed with).
-            Then, Press "Stats!" to calculate for the selected faction or "All faction Stats!" for every faction<br>
+            Choose Faction, Player count, Rating (per faction), first round buildings (that they passed with), 0th round BON tiles and any round 1 FAV.
+            Press "Stats!" to calculate for the selected restrictions.<br>
+			Pressing "Enumerate" under a field will step through every option in that field while keeping the selection in the other fields.<br>
             Checkboxes mean "strictly" equal to that value, otherwise its equal or greater.
-            "VP" is the raw score at the end of the game. "Margin" is [ score - (that game's avg score)]
+			"VP" is the raw score at the end of the game. "Margin" is [ score - (that game's avg score)]<br>
+			Hover over a statistic to view the standard deviation. Linking to a page with the above URL will re-calculate the stats when loading.
         <table><tr><th>Faction</th>
                 <th>Player Count</th>
                 <th>Rating Quartile</th>
