@@ -197,7 +197,7 @@
 					var cont    = $("#cont-"+fact );
                     if( !section.exists() )
                     {
-                        section = $("<table>",{id:fact,style:"font-family: 'Courier New', monospace;border-collapse:collapse"});
+                        section = $("<table>",{id:fact,class:"stat-cont",style:"font-family: 'Courier New', monospace;border-collapse:collapse"});
                         cont = $("<div>",{id:"cont-"+fact,style:"width:600px"});
                         cont.append( section );
                         var header = $("<tr style='border-bottom:1px solid gray;'>");
@@ -211,7 +211,9 @@
                         $("#stats").append( cont );
                     }
 
-					var row = $("<tr>", {id:key_pattern});
+					key_pattern = key_pattern.toString().split("/")[1];
+
+					var row = $("<tr>", {id:key_pattern,class:'stat'});
                         row.append( "<td>" +pcnt );
                         row.append( "<td>"+ rate );
 						row.append( "<td class='data' style='text-align:left'>"+desc+"<span class='tooltip'>"+tooltip+"</span>" );
@@ -355,7 +357,30 @@
                 //$("#stats").height( $(window).height() - $("#header").height() - 10 );
 
             });
+			window.onpopstate = function( e ) {
+                var hash = window.location.hash
+                var exist_keys = hash.substr(1).split(",");
+				$(".stat").each( function( i, tr ) {
+					if( $.inArray(tr.id, exist_keys ) < 0  )
+					{
+						tr.remove();
+					}
+				});
+				$(".stat-cont").each( function( i, table ) {
+					if( table.children.length == 1 )
+					{
+						$(table).parent().remove();
+					}
+				});
+				$.each( exist_keys, function( i, key ) {
+					if( key != "" && document.getElementById(key) == null )
+					{
+						get_stats_by_key( new RegExp( key ) );
+					}
 
+				} );
+
+			};
 			/*
             $(window).resize( function() {
                 $("#stats").height($(window).height() - $("#header").height() -10  );
