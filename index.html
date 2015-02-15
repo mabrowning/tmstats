@@ -22,6 +22,7 @@
                     var stats = hash.substr(1).split(",");
                     for( var i = 0; i < stats.length; i++ )
                     {
+						if( stats[i] )
                         get_stats_by_key( new RegExp( stats[i] ) );
                     }
                 }
@@ -51,7 +52,10 @@
             function key_to_faction( key )
             {
                 if( key == '.' ) return "All";
-                return factions[ key.charCodeAt(0) - 97 ];
+				var facts = [];
+				for( var i =0; i < key.length; i++)
+					facts.push( factions[key.charCodeAt(i) - 97] );
+				return facts.join(" ");
             }
 
             function key_to_rating( key )
@@ -129,9 +133,10 @@
                     var chunks = get_regex_chunks( key_pattern.toString() );
                     var fact = key_to_faction( chunks[0] );
 
+
                     var pcnt = chunks[1];
 
-                    if( pcnt == '.' ) pcnt = "All";
+                    if( pcnt == '.' ) pcnt = "2-5P";
                     else if( pcnt.length == 1 )
                     {
                         pcnt += "P"
@@ -164,15 +169,38 @@
                         building_str( chunks[5], "TE" ) +
                         building_str( chunks[6], "SA" ) +
                         building_str( chunks[7], "SH" ) ;
+					var BON = chunks[8];
+					if( BON == "." || BON == undefined ) BON = "";
+
+					var FAV = chunks[9];
+					if( FAV == "." || FAV == undefined ) FAV = "";
+
+					var strBON = [];
+					for( var i = 0; i < BON.length; i++ )
+						strBON.push( ALLBON[ BON[i] ] );
+					BON = strBON.join("<br>");
+
+					var strFAV = [];
+					for( var i = 0; i < FAV.length; i++ )
+						strFAV.push( ALLFAV[ FAV[i] ] );
+					FAV = strFAV.join("<br>");
+
+					if( desc == "" ) desc = BON;
+					if( desc == "" ) desc = FAV;
+
+					var tooltip = BON + " " + FAV;
 
                     var section = $("#"+fact );
+					var cont    = $("#cont-"+fact );
                     if( !section.exists() )
                     {
                         section = $("<table>",{id:fact,style:"font-family: 'Courier New', monospace;border-collapse:collapse"});
-                        var cont = $("<div>",{style:"width:450px"});
+                        cont = $("<div>",{id:"cont-"+fact,style:"width:600px"});
                         cont.append( section );
                         var header = $("<tr style='border-bottom:1px solid gray;'>");
-                            header.append( "<th colspan=3 style='text-align:left; font-family:serif;width:120px;'>"+fact )
+                            header.append( "<th           style='text-align:left; font-family:serif;width:120px;'>"+fact )
+                            header.append( "<th>Rat." )
+                            header.append( "<th           style='border-left:1px solid gray;'>Desc." )
                             header.append( "<th colspan=3 style='border-left:1px solid gray;width:120x;'>VP" )
                             header.append( "<th colspan=3 style='border-left:1px solid gray;width:120px;'>Margin" )
                             header.append( "<th colspan=1 style='border-left:1px solid gray;'>Count" )
@@ -180,22 +208,24 @@
                         $("#stats").append( cont );
                     }
 
-                    var row = $("<tr>");
+					var row = $("<tr>", {id:key_pattern});
                         row.append( "<td>" +pcnt );
                         row.append( "<td>"+ rate );
-                        row.append( "<td style='text-align:left'>"+desc );
+						row.append( "<td class='data' style='text-align:left'>"+desc+"<span class='tooltip'>"+tooltip+"</span>" );
 
-                        row.append( "<td class='data'>" +ret[0].mean().toFixed(2)+"<span class='tooltip'>"+ret[0].std().toFixed(2)+"</span>");
+                        row.append( "<td class='data'>" +ret[0].mean().toFixed(2)+"<span class='tooltip'>Standard Deviation:"+ret[0].std().toFixed(2)+"</span>");
                         row.append( "<td>±" );
                         row.append( "<td>"+ret[0].meanstd().toFixed(2) );
 
-                        row.append( "<td class='data'>" +ret[1].mean().toFixed(2)+"<span class='tooltip'>"+ret[1].std().toFixed(2)+"</span>");
+                        row.append( "<td class='data'>" +ret[1].mean().toFixed(2)+"<span class='tooltip'>Standard Deviation:"+ret[1].std().toFixed(2)+"</span>");
                         row.append( "<td>±" );
                         row.append( "<td>"+ret[1].meanstd().toFixed(2) );
 
-                        row.append( "<td style='border-left:1px solid gray;'>"+ret[1].n );
+                        row.append( "<td style='border-left:1px solid gray;text-align:right'>"+ret[1].n );
 
                     section.append( row );
+
+					cont.height( section.height() +2 );
                 }
             }
 
@@ -217,20 +247,21 @@
                 return regpat;
             }
 
-            function get_stats_for_fact( factkey, fact ) 
+            function get_key_from_selection( ) 
             {
-
-                var pcountpat = get_multi_select_key( "pcount" );
+				var fctpat = get_multi_select_key( "faction" );
+                var pctpat = get_multi_select_key( "pcount" );
                 var ratpat = get_multi_select_key( "rating" );
                 var BONpat = get_multi_select_key( "BON" );
                 var FAVpat = get_multi_select_key( "FAV", true );
 
+				//Favors are optional and can be in any order
                 if( FAVpat )
                     FAVpat = ".*" + FAVpat;
 
                 var key_pattern = 
-                    factkey+ 
-                    pcountpat +
+                    fctpat + 
+                    pctpat +
                     ratpat +
                     building_key( "D") +
                     building_key("TP") +
@@ -240,67 +271,93 @@
                     BONpat + 
                     FAVpat 
                     ;
-                
-                var hash = window.location.hash
-                var stats = hash.substr(1).split(",");
-                if( $.inArray(key_pattern, stats ) < 0  )
-                {
-                    get_stats_by_key( new RegExp( key_pattern ) );
-                    return key_pattern;
-                }
+				return key_pattern;
             }
 
-            function get_stats_for_all_facts()
+			function compute_stats_for_key( key_pattern )
+			{
+                if( $.inArray(key_pattern, stats ) < 0  )
+                {
+                    return key_pattern;
+                }
+			}
+
+			function prepare_hash_and_get_exist_keys()
+			{
+                var hash = window.location.hash
+                var exist_keys = hash.substr(1).split(",");
+
+				if( hash == "" ) hash = "#";
+				else if( hash != "#" ) hash += ",";
+
+				return [hash,exist_keys];
+			}
+
+            function enumerate( id )
             {
-                var new_loc = []; 
-                for( var i = 0; i< factions.length; i++ )
-                {
-                    var key = get_stats_for_fact( String.fromCharCode(97+i), factions[i] );
-                    if( key != undefined )
-                        new_loc.push( key )
-                }
+				var item = $("#"+id );
+				var prev_val = item.val();
+				var new_keys = item.children().map(function(i,opt){
+						item.val( opt.value );
+						return get_key_from_selection();
+						});
 
-                if( new_loc.length )
-                {
-                    var hash = window.location.hash;
-                    if (hash)
-                        hash += ","+ new_loc.join(",")
-                    else
-                        hash = "#"+new_loc.join(",");
 
-                    window.location = hash ;
-                }
+				var hash_keys = prepare_hash_and_get_exist_keys();
+				var hash = hash_keys[0];
+                var exist_keys = hash_keys[1];
+
+				$.each( new_keys, function( i, new_key ) {
+					if( $.inArray(new_key, exist_keys ) < 0  )
+					{
+						get_stats_by_key( new RegExp( new_key ) );
+						hash += new_key + ",";
+					}
+                } );
+				if( window.location.hash != hash )
+					window.location = hash ;
+
+				//restore previous selection
+				item.val( prev_val );
             }
 
             function get_stats()
             {
-                var factkey = $("#faction").val() 
-                var fact    = $("#faction option:selected").text();
-                var key =  get_stats_for_fact( factkey, fact );
-                if( key != undefined )
-                {
-                    var hash = window.location.hash;
-                    if (hash)
-                        window.location = hash + "," + key;
-                    else
-                        window.location = "#"+key;
+                var new_key =  get_key_from_selection();
+				var hash_keys = prepare_hash_and_get_exist_keys();
+				var hash = hash_keys[0];
+                var exist_keys = hash_keys[1];
+				if( $.inArray(new_key, exist_keys ) < 0  )
+				{
+					get_stats_by_key( new RegExp( new_key ) );
+					hash += new_key + ",";
                 }
+
+				if( window.location.hash != hash )
+					window.location = hash ;
             }
+
+			var ALLBON = {};
+			var ALLFAV = {};
 
             $( document ).ready( function() {
 
+				$("#BON").children().each( function( i, opt ) { ALLBON[opt.value] = opt.text } );
+				$("#FAV").children().each( function( i, opt ) { ALLFAV[opt.value] = opt.text } );
                 var s = $("#faction");
-                $("<option/>", { value: '.', text:'All' } ).appendTo( s );
+                //$("<option/>", { value: '.', text:'All' } ).appendTo( s );
                 for( var i = 0; i< factions.length; i++ )
                     $("<option/>", {value: String.fromCharCode(97+i), text:factions[i]} ).appendTo( s );
 
-                $("#stats").height( $(window).height() - $("#header").height() - 10 );
+                //$("#stats").height( $(window).height() - $("#header").height() - 10 );
 
             });
 
+			/*
             $(window).resize( function() {
                 $("#stats").height($(window).height() - $("#header").height() -10  );
             });
+			*/
         </script>
         <style type="text/css">
             .tooltip {
@@ -342,7 +399,7 @@
                 <th>Starting BON</th>
                 <th>FAV</th>
             </tr>
-            <tr><td><select id="faction" /></td>
+            <tr><td><select id="faction" multiple /></td>
                 <td><select id="pcount" multiple >
                         <option value='2'>2
                         <option value='3'>3
@@ -373,25 +430,35 @@
                         <option value='9'>BON10 (Ship VP)
                     </select></td>
                 <td><select id="FAV" multiple >
-                        <option value='1'>FAV1  (Fire 3)
-                        <option value='2'>FAV2  (Water3)
-                        <option value='3'>FAV3  (Earth3)
-                        <option value='4'>FAV4  (Air  3)
-                        <option value='5'>FAV5  (Fire 2)
-                        <option value='6'>FAV6  (Water2)
-                        <option value='7'>FAV7  (Earth2)
-                        <option value='8'>FAV8  (Air  2)
-                        <option value='9'>FAV9  (Fire 1)
-                        <option value='a'>FAV10 (Water1)
-                        <option value='b'>FAV11 (Earth1)
-                        <option value='c'>FAV12 (Air  1)
+                        <option value='1'>FAV1  (F3)
+                        <option value='2'>FAV2  (W3)
+                        <option value='3'>FAV3  (E3)
+                        <option value='4'>FAV4  (A3)
+                        <option value='5'>FAV5  (F2)
+                        <option value='6'>FAV6  (W2)
+                        <option value='7'>FAV7  (E2)
+                        <option value='8'>FAV8  (A2)
+                        <option value='9'>FAV9  (F1)
+                        <option value='a'>FAV10 (W1)
+                        <option value='b'>FAV11 (E1)
+                        <option value='c'>FAV12 (A1)
                     </select></td>
 
                 <td> <input type="button" onclick="get_stats()" value="Stats!" /></td>
-                <td> <input type="button" onclick="get_stats_for_all_facts()" value="All faction Stats!" /> <td>
                 <td> <input type="button" onclick="$('#stats').empty();window.location='#'" value="Clear" />
                     <span id="error" style="display:none">No Matches!</span> </td>
             </tr>
+            <tr><td><input type="button" onclick="enumerate('faction')" value="Enumerate"/></td>
+                <td><input type="button" onclick="enumerate('pcount')" value="Enumerate"/></td>
+                <td><input type="button" onclick="enumerate('rating')" value="Enumerate"/></td>
+					<td></td>
+					<td></td>
+					<td></td>
+					<td></td>
+					<td></td>
+                <td><input type="button" onclick="enumerate('BON')" value="Enumerate"/></td>
+                <td><input type="button" onclick="enumerate('FAV')" value="Enumerate"/></td>
+				</tr>
         </table>
     </div>
 
