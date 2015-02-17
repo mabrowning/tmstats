@@ -1,0 +1,6 @@
+*.swp
+*~
+*.pyc
+*.json
+games
+games.pickle.gz
